@@ -1,0 +1,12 @@
+.data
+str:
+    .string "Ola mundo\n" 	#define no seguimento de dados a string que desejamos
+
+.text
+main:
+    la a0, str	#carrega no registrador a0 a string definida no label "str" do segmento de data
+    li a7, 4 	#define o syscall como 4 (print string)
+    ecall 	    #realiza a chamada do syscall 4
+
+    li a7, 10   #define o syscall como 10 (exit)
+    ecall 		#realiza a chamada do syscall 10

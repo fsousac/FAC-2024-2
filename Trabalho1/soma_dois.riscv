@@ -1,0 +1,22 @@
+.data
+    newline: .asciz "\n"    #definição da quebra de linha para a finalização do programa
+
+.text
+main:
+    li a7, 5 	#define o syscall como 5 (read int)
+    ecall 	    #realiza a chamada do syscall 5
+    mv t0, a0    #lê o primeiro numero e guarda em t0 
+    
+    li a7, 5 	#define o syscall como 5 (read int)
+    ecall 	    #realiza outra chamada do syscall 5
+    mv t1, a0    #lê o segundo numero e guarda em t1
+
+    add a0, t0, t1     # soma os numeros e guarda em a0
+    
+    li a7, 1    #define o syscall como 1 (print int)
+    ecall       #realiza a syscall 1
+
+    li a7, 4    #define o syscall como 4 (print string)
+    la a0, newline  #printa \n para marcar a finalização do código
+    ecall   #realiza a syscall 4
+
