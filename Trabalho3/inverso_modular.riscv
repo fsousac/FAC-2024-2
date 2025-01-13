@@ -1,0 +1,141 @@
+    .data
+msg_invalid:
+    .asciz "Entradas invalidas\n"
+msg_not_prime:
+    .asciz "O modulo nao eh primo\n"
+msg_result:
+    .asciz "inverso = "
+newline:
+    .asciz "\n"
+
+    .text
+    .globl main
+
+main:
+    li     a7, 5                       # syscall para ler o primeiro inteiro
+    ecall
+    mv     t0, a0                      # salva o primeiro int em t0
+    mv     s3, t0                      # salva o primeiro int em s3
+
+    li     a7, 5                       #syscall para ler o segundo inteiro
+    ecall
+    mv     t1, a0                      #salva o segundo inteiro em t1
+    mv     s4, t1                      #salva o segundo inteiro em s4
+
+    li     t2, 1
+    ble    t0, t2, print_invalid
+    ble    t1, t2, print_invalid
+
+    rem    t2, t1, t0
+    beq    t2, zero, print_invalid
+
+    call   is_prime
+    beqz   a0, not_prime_message
+
+    call   gcd_check
+    beqz   a0, print_invalid
+
+    beq    a0, zero, not_prime_message
+    j      inverso_multiplicativo
+
+
+is_prime:
+    mv     t3, x1
+    li     t4, 2
+check_prime:
+    mul    t5, t4, t4
+    bge    t5, s3, prime_found
+    rem    t6, s3, t4
+    beqz   t6, not_prime
+    addi   t4, t4, 1
+    j      check_prime
+prime_found:
+    li     a0, 1
+    ret
+not_prime:
+    li     a0, 0
+    ret
+
+gcd_check:
+    mv     t3, s4
+    mv     t4, s3
+gcd_loop:
+    rem    t5, t3, t4
+    beqz   t5, coprime
+    mv     t3, t4
+    mv     t4, t5
+    j      gcd_loop
+coprime:
+    li     a0, 1
+    ret
+
+inverso_multiplicativo:
+    li     t2, 0
+    li     t3, 1
+    mv     t4, s3
+    mv     t5, s4
+
+loop:
+    beq    t5, x0, done
+
+    div    s0, t4, t5
+
+    mv     s2, t2
+    mv     t2, t3
+
+    mul    s1, s0, t3
+    sub    t3, s2, s1
+
+    mv     s2, t4
+    mv     t4, t5
+
+    mul    s1, s0, t5
+    sub    t5, s2, s1
+
+    j      loop
+
+done:
+    li     s1, 1
+    bgt    t4, s1, no_inverse
+    blt    t2, x0, make_positive
+    mv     t3, t2
+    j      end
+
+make_positive:
+    add    t2, t2, t0
+    mv     t3, t2
+    j      end
+
+no_inverse:
+    li     t3, 0
+
+end:
+    la     a0, msg_result
+    li     a7, 4
+    ecall
+
+    li     a7, 1
+    mv     a0, t3
+    ecall
+
+    li     a7, 11
+    li     a0, 10
+    ecall
+
+    j      end_program
+
+print_invalid:
+    la     a0, msg_invalid
+    li     a7, 4
+    ecall
+    j      end_program
+
+not_prime_message:
+    la     a0, msg_not_prime
+    li     a7, 4
+    ecall
+    j      end_program
+
+end_program:
+    li     a7, 10
+    ecall

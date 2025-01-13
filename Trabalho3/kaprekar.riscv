@@ -1,0 +1,197 @@
+    .text
+    .globl  main
+main:
+    li      s0, 0                    #inicia contador
+    li      a7, 5                    #syscall de ler inteiro
+    ecall
+    mv      t0, a0                   #salva n em t0
+    li      t1, 1000                 #usa t1 para o limite inferior
+    li      t2, 9999                 #e t2 para o limite superior
+    li      s1, 6174                 #s1 é a constate de kaprekar
+
+    blt     t0, t1, print_invalid    #verifica se e menor que 1000
+    bgt     t0, t2, print_invalid    #verifica se e maior que 9999
+    beq     t0, s1, valida_zero      #faz uma validacao do zero
+
+
+kaprekar_looping:
+    li      t5, 1000                 #faz a subtracao da casa do milhar
+    div     t1, t0, t5               #pega a unidade
+    mul     t6, t1, t5               #transforma em milhar
+    sub     t0, t0, t6               #e subtrai
+
+    li      t5, 100                  #faz a subtracao da casa da centena
+    div     t2, t0, t5               #pega a unidade
+    mul     t6, t2, t5               #transforma em centena
+    sub     t0, t0, t6               #e subtrai
+
+    li      t5, 10                   #processo análogo ao anterior para a dezena
+    div     t3, t0, t5
+    mul     t6, t3, t5
+    sub     t0, t0, t6
+
+    mv      t4, t0                   # a unidade so querer um move
+
+
+
+    beq     t1, t2, check_t3         # faz a verificacao do numero resultante
+    j       sort_asc                 #ordena ascendente
+
+check_t3:
+    beq     t1, t3, check_t4         #verifica o t4 tambem
+    j       sort_asc
+
+check_t4:
+    beq     t1, t4, print_invalid    #se forem iguais retorna invalido
+    j       sort_asc
+
+sort_asc:
+
+    li      t5, 1                    #faz um sort (bobble sort básico ascendente)
+
+bubble_sort_asc:
+    li      t5, 0
+
+
+    blt     t2, t1, swap_t1_t2
+    j       check_t2_t3
+
+swap_t1_t2:
+    mv      t6, t1
+    mv      t1, t2
+    mv      t2, t6
+    li      t5, 1
+    j       check_t2_t3
+
+check_t2_t3:
+    blt     t3, t2, swap_t2_t3
+    j       check_t3_t4
+
+swap_t2_t3:
+    mv      t6, t2
+    mv      t2, t3
+    mv      t3, t6
+    li      t5, 1
+    j       check_t3_t4
+
+check_t3_t4:
+    blt     t4, t3, swap_t3_t4
+    j       end_check
+
+swap_t3_t4:
+    mv      t6, t3
+    mv      t3, t4
+    mv      t4, t6
+    li      t5, 1
+
+end_check:
+    bnez    t5, bubble_sort_asc
+    j       done_asc
+
+
+done_asc:
+    li      t0, 0
+    li      t6, 10
+    mv      t0, t1
+    mul     t2, t2, t6
+    add     t0, t0, t2
+    div     t2, t2, t6
+    li      t6, 100
+    mul     t3, t3, t6
+    add     t0, t0, t3
+    div     t3, t3, t6
+    li      t6, 1000
+    mul     t4, t4, t6
+    add     t0, t0, t4
+    div     t4, t4, t6               #finaliza o bobble sort setando o novo numero para a proxima iteracao
+
+sort_desc:
+
+    li      t5, 1
+
+bubble_sort_desc:
+    li      t5, 0                    #bobble sort clássico descendente
+
+
+    bge     t2, t1, check_t2_t3_desc
+    mv      t6, t1
+    mv      t1, t2
+    mv      t2, t6
+    li      t5, 1
+    j       check_t2_t3_desc
+
+check_t2_t3_desc:
+    bge     t3, t2, check_t3_t4_desc
+    mv      t6, t2
+    mv      t2, t3
+    mv      t3, t6
+    li      t5, 1
+    j       check_t3_t4_desc
+
+check_t3_t4_desc:
+    bge     t4, t3, end_check_desc
+    mv      t6, t3
+    mv      t3, t4
+    mv      t4, t6
+    li      t5, 1
+
+end_check_desc:
+    bnez    t5, bubble_sort_desc
+    j       done_desc
+
+done_desc:
+    li      t6, 10
+    mv      t5, t4
+    mul     t3, t3, t6
+    add     t5, t5, t3
+    div     t3, t3, t6
+    li      t6, 100
+    mul     t2, t2, t6
+    add     t5, t5, t2
+    div     t2, t2, t6
+    li      t6, 1000
+    mul     t1, t1, t6
+    add     t5, t5, t1
+    div     t1, t1, t6               # reorganiza o numero como feito anteriormente
+
+
+    li      t6, 0
+    sub     t6, t0, t5               #subtrai o numero ordenado asc com o ordenado desc e salva em t6
+
+    li      t0, 6174                 #salva a constante para verificar de novo
+    addi    s0, s0, 1                #adiciona +1 no contador
+    beq     t6, t0, end_kaprekar     #verifica se e iguaal a constante, se for, finaliza
+    mv      t0, t6                   #se nao salva o novo numero do t6 em t0 (n)
+    j       kaprekar_looping         #faz outra iteracao
+
+end_kaprekar:
+    mv      a0, s0                   #syscall para printar as iteracoes do programa (s0)
+    li      a7, 1
+    ecall
+    li      a0, 10                   #syscall para printar o \n no final
+    li      a7, 11
+    ecall
+    j       exit
+
+valida_zero:
+    li      a0, 0                    #syscall para printar 0 caso ja esteja na const
+    li      a7, 1
+    ecall
+    li      a0, 10                   #syscall para printar o \n no final
+    li      a7, 11
+    ecall
+    j       exit
+
+exit:
+    li      a7, 10                   #syscall para finalizar o programa
+    ecall
+
+print_invalid:
+    li      a7, 4
+    la      a0, error_msg            #syscall para printar a mensagem de erro
+    ecall
+    j       exit
+
+    .data
+error_msg:
+    .string "entrada invalida.\n"

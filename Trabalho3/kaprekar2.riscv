@@ -1,0 +1,156 @@
+    .data
+msg_invalid:
+    .asciz "entrada invalida.\n"
+msg_result:
+    .asciz "%d\n"
+kaprekar_constant:
+    .word  6174
+newline:
+    .asciz "\n"
+
+    .text
+    .globl main
+
+main:
+# Le o numero de entrada
+    li     a7, 5
+    ecall
+    mv     t0, a0
+
+
+    li     t1, 1000
+    li     t2, 9999
+    blt    t0, t1, print_invalid
+    bgt    t0, t2, print_invalid
+
+
+    mv     t3, t0                # n em t3
+    li     t4, 10
+    rem    t5, t3, t4            # Primeiro digito
+    div    t3, t3, t4
+    rem    t6, t3, t4            # Segundo digito
+    bne    t5, t6, valid_digits
+    div    t3, t3, t4
+    rem    s1, t3, t4            # Terceiro digito
+    bne    t5, s1, valid_digits
+    div    t3, t3, t4
+    rem    s2, t3, t4            # Quarto digito
+    bne    t5, s2, valid_digits
+    j      print_invalid
+
+valid_digits:
+
+    li     s0, 0
+
+kaprekar_loop:
+
+    la     t6, kaprekar_constant
+    lw     t6, 0(t6)
+    beq    t0, t6, print_result
+
+
+    li     t4, 1000              # t4 = 1000
+    div    t1, t0, t4            # t1 = milhar
+    mul    t5, t1, t4            # t5 = t1 * 1000
+    sub    t0, t0, t5            # t0 = t0 - t5 (restante)
+
+    li     t4, 100               # t4 = 100
+    div    t2, t0, t4            # t2 = centena
+    mul    t5, t2, t4            # t5 = t2 * 100
+    sub    t0, t0, t5            # t0 = t0 - t5 (restante)
+
+    li     t4, 10                # t4 = 10
+    div    t3, t0, t4            # t3 = dezena
+    mul    t5, t3, t4            # t5 = t3 * 10
+    sub    t0, t0, t5
+
+    mv     t4, t0                # t4 = unidade
+
+    j      sort_asc
+
+sort_asc:
+
+    li     t5, 1
+
+bubble_sort_asc:
+    li     t5, 0
+
+# Comparando t1, t2
+    blt    t2, t1, swap_t1_t2    # Se t2 < t1, trocar
+    j      check_t2_t3           # Se nao, verifica t2 e t3
+
+swap_t1_t2:
+    mv     t5, t1                # Salva t1 em t5
+    mv     t1, t2                # t1 recebe t2
+    mv     t2, t5                # t2 recebe t5
+    li     t5, 1                 # Indica que houve troca
+    j      check_t2_t3           # Verifica t2 e t3
+
+check_t2_t3:
+    blt    t3, t2, swap_t2_t3    # Se t3 < t2, trocar
+    j      check_t3_t4           # Se nao, verifica t3 e t4
+
+swap_t2_t3:
+    mv     t5, t2                # Salva t2 em t5
+    mv     t2, t3                # t2 recebe t3
+    mv     t3, t5                # t3 recebe t5
+    li     t5, 1                 # Indica que houve troca
+    j      check_t3_t4           # Verifica t3 e t4
+
+check_t3_t4:
+    blt    t4, t3, swap_t3_t4    # Se t4 < t3, trocar
+    j      end_check             # Se nao, a verificacao terminou
+
+swap_t3_t4:
+    mv     t5, t3
+    mv     t3, t4                # t3 recebe t4
+    mv     t4, t5                # t4 recebe t5
+    li     t5, 1                 # Indica que houve troca
+
+end_check:
+    bnez   t5, bubble_sort_asc   # Se houve troca, repetir o bubble sort
+    j      done                  # Se nao, a ordenacao terminou
+
+done:
+
+    li     t5, 1000
+    mul    t5, t5, t1            # t5 = t1 * 1000 (milhar)
+    li     t6, 100
+    mul    t6, t6, t2            # t6 = t2 * 100 (centena)
+    add    t5, t5, t6            # t5 = t5 + t6
+    li     t6, 10
+    mul    t6, t6, t3            # t6 = t3 * 10 (dezena)
+    add    t5, t5, t6            # t5 = t5 + t6
+    add    t5, t5, t4            # t5 = t5 + t4 (unidade)
+
+
+    li     s2, 1000
+    mul    s2, s2, t4            # s2 = t4 * 1000 (unidade invertida)
+    li     s3, 100
+    mul    s3, s3, t3            # s3 = t3 * 100
+    add    s2, s2, s3
+    li     s3, 10
+    mul    s3, s3, t2
+    add    s2, s2, s3
+    add    s2, s2, t1
+
+
+    sub    t0, s2, t5
+    addi   s0, s0, 1
+    bne    t0, t6, kaprekar_loop
+
+print_result:
+    mv     a0, s0
+    li     a7, 1
+    ecall
+    j      exit
+
+print_invalid:
+    la     a0, msg_invalid
+    li     a7, 4                 #syscall print string invalid
+    ecall
+    j      exit
+
+exit:
+    li     a7, 10                #syscall fim do programa
+    ecall
