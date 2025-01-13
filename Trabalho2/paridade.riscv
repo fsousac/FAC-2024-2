@@ -1,0 +1,71 @@
+    .data
+# Strings para mensagens de erro e saída
+erro: .asciz "entrada incorreta\n"
+paridade_0: .asciz "bit-paridade: 0\nsaida: "
+paridade_1: .asciz "bit-paridade: 1\nsaida: "
+
+    .text
+    .globl main
+
+main:
+    # Ler a entrada
+    li a7, 5          # syscall para ler inteiro
+    ecall             # chamada do syscall
+    mv s0, a0         # armazenar o número em s0
+
+    # Verificar se a entrada é válida (0 <= N < 128)
+    li t0, 0          # Limite inferior
+    blt s0, t0, imprime_erro
+
+    li t0, 128        # Limite superior
+    bge s0, t0, imprime_erro
+
+    # Calcular o número de bits 1 no número
+    mv t1, s0         # Copiar o número original para t1
+    li s1, 0          # Contador de bits 1
+conta_bits:
+    beqz t1, calcula_paridade # Se t1 for 0, termina o loop
+    andi t2, t1, 1    # Verificar o bit menos significativo
+    add s1, s1, t2    # Somar ao contador se for 1
+    srli t1, t1, 1    # Deslocar os bits para a direita
+    j conta_bits      # Repetir o loop
+
+calcula_paridade:
+    andi t2, s1, 1    # Verificar se o contador é ímpar
+    beqz t2, imprime_paridade_0 # Se for par, bit de paridade é 0
+
+imprime_paridade_1:
+    # Caso o bit de paridade seja 1
+    la a0, paridade_1 # Mensagem para bit de paridade 1
+    li a7, 4          # syscall para imprimir string
+    ecall
+
+    # Calcular saída (número original com bit de paridade 1)
+    slli t0, s0, 1    # Deslocar o número original à esquerda
+    ori t0, t0, 1     # Adicionar o bit de paridade 1
+    mv s0, t0         # Atualizar s0 com o valor final
+    j imprime_saida
+
+imprime_paridade_0:
+    la a0, paridade_0 # Mensagem para bit de paridade 0
+    li a7, 4          # syscall para imprimir string
+    ecall
+
+    # Calcular saída (número original com bit de paridade 0)
+    j imprime_saida
+
+imprime_saida:
+    mv a0, s0         # Carregar o valor final para imprimir
+    li a7, 1          # syscall para imprimir inteiro
+    ecall
+    j fim
+
+imprime_erro:
+    la a0, erro       # Carregar mensagem de erro
+    li a7, 4          # syscall para imprimir string
+    ecall             # Imprimir a mensagem de erro
+    j fim
+
+fim:
+    li a7, 10         # syscall para encerrar
+    ecall             # Terminar o programa
