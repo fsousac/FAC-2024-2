@@ -1,0 +1,90 @@
+    .data
+key:
+    .word  0                          # Armazena a chave
+cesar:
+    .space 33                         # Buffer para armazenar a string (máx. 32 caracteres + '\0')
+newline:
+    .asciz "\n"
+
+    .text
+    .globl main
+
+main:
+# Lê a chave
+    li     a7, 5                      # Syscall: read integer
+    ecall
+    sw     a0, key, t0                # Salva a chave na memória
+
+# Lê a string (mensagem)
+    la     a0, cesar                  # Endereço do buffer da string
+    li     a1, 33                     # Tamanho máximo da string
+    li     a7, 8                      # Syscall: read string
+    ecall
+    
+# Printa \n
+    la     a0, newline                # Nova linha
+    li     a7, 4                      # Syscall: print string
+    ecall
+
+# Ajusta a chave para o intervalo 0-25
+    lw     t0, key                    # Carrega a chave
+    li     t1, 26                     # Modificador (26 letras do alfabeto)
+    rem    t0, t0, t1                 # key = key % 26
+    bltz   t0, ajusta_chave           # Se negativo, ajusta a chave
+    j      cifra_loop
+ajusta_chave:
+    add    t0, t0, t1                 # key += 26 (se for negativo)
+
+# Loop para cifrar a mensagem
+cifra_loop:
+    la     t1, cesar                  # Endereço do buffer da string
+cifra_next:
+    lb     t2, 0(t1)                  # Carrega o próximo caractere
+    beqz   t2, imprime_saida          # Fim da string (encontrado '\0')
+
+# Verifica se o caractere é uma letra
+    li     t3, 'A'                    # ASCII de 'A'
+    li     t4, 'Z'                    # ASCII de 'Z'
+    blt    t2, t3, verifica_minuscula
+    bgt    t2, t4, verifica_minuscula
+
+# Cifra maiúsculas
+    sub    t2, t2, t3                 # Converte para índice (A=0, B=1, ...)
+    add    t2, t2, t0                 # Aplica a chave (deslocamento)
+    li     t5, 26
+    rem    t2, t2, t5                 # Garante que fique no intervalo 0-25
+    add    t2, t2, t3                 # Converte de volta para ASCII
+    sb     t2, 0(t1)                  # Atualiza a string no buffer
+    j      avanca
+
+verifica_minuscula:
+    li     t3, 'a'                    # ASCII de 'a'
+    li     t4, 'z'                    # ASCII de 'z'
+    blt    t2, t3, avanca             # Não é uma letra
+    bgt    t2, t4, avanca             # Não é uma letra
+
+# Cifra minúsculas
+    sub    t2, t2, t3                 # Converte para índice (a=0, b=1, ...)
+    add    t2, t2, t0                 # Aplica a chave (deslocamento)
+    li     t5, 26
+    rem    t2, t2, t5                 # Garante que fique no intervalo 0-25
+    add    t2, t2, t3                 # Converte de volta para ASCII
+    sb     t2, 0(t1)                  # Atualiza a string no buffer
+
+avanca:
+    addi   t1, t1, 1                  # Avança para o próximo caractere
+    j      cifra_next
+
+# Exibe a mensagem cifrada
+imprime_saida:
+    la     a0, cesar                  # String cifrada
+    li     a7, 4                      # Syscall: print string
+    ecall
+
+    la     a0, newline                # Nova linha
+    li     a7, 4                      # Syscall: print string
+    ecall
+
+# Finaliza o programa
+    li     a7, 10                     # Syscall: exit
+    ecall

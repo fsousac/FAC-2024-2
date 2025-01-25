@@ -1,0 +1,78 @@
+
+    .data
+ascii_txt:
+    .space 33                       # Espaço para armazenar a string de entrada (máximo de 32 caracteres + '\0')
+hex_txt:
+    .space 66                       # Espaço para armazenar a string hexadecimal (64 caracteres + '\0' + '\n')
+newline:
+    .asciz "\n"                     # Pular linha no final do codigo
+
+    .text
+    .globl main
+
+main:
+# Ler a string de entrada
+    la     a0, ascii_txt            # Endereço do buffer de entrada
+    li     a1, 33                   # Tamanho máximo da string (32 + '\0')
+    li     a7, 8                    # Syscall: read string
+    ecall
+
+# Inicializar registradores para loop
+    la     s0, ascii_txt            # Ponteiro para a string de entrada (registrador s0)
+    la     s1, hex_txt              # Ponteiro para a string hexadecimal (registrador s1)
+    li     t1, 10                   # Valor 10 para comparação
+
+loop_convert:
+    lb     s3, 0(s0)                # Carrega o próximo caractere da string de entrada (registrador s3)
+    beqz   s3, end_convert          # Se for '\0', termina o loop
+    li     t2, 10                   # Caractere de nova linha '\n'
+    beq    s3, t2, skip_char        # Se for '\n', ignora
+
+# Converter o caractere para hexadecimal (parte alta)
+    srli   t0, s3, 4                # Shift para direita (4 bits) para pegar a parte alta
+    andi   t0, t0, 0xF              # Máscara para garantir apenas 4 bits
+    blt    t0, t1, store_high_digit
+    addi   t0, t0, 87               # Ajusta para 'a' após '9' (87 = 'a' - 10)
+    j      store_high
+
+store_high_digit:
+    addi   t0, t0, 48               # Ajusta para '0' (48 = '0')
+
+store_high:
+    sb     t0, 0(s1)                # Armazena a parte alta no buffer hexadecimal
+    addi   s1, s1, 1                # Avança no buffer hexadecimal
+
+# Converter o caractere para hexadecimal (parte baixa)
+    andi   t0, s3, 0xF              # Máscara para pegar os 4 bits menos significativos
+    blt    t0, t1, store_low_digit
+    addi   t0, t0, 87               # Ajusta para 'a' após '9'
+    j      store_low
+
+store_low_digit:
+    addi   t0, t0, 48               # Ajusta para '0'
+
+store_low:
+    sb     t0, 0(s1)                # Armazena a parte baixa no buffer hexadecimal
+    addi   s1, s1, 1                # Avança no buffer hexadecimal
+
+skip_char:
+# Avançar para o próximo caractere da string de entrada
+    addi   s0, s0, 1                # Incrementa o ponteiro da string de entrada
+    j      loop_convert
+
+end_convert:
+    sb     zero, 0(s1)              # Adiciona o terminador nulo '\0' ao final da string hexadecimal
+
+# Exibir a string hexadecimal
+    la     a0, hex_txt              # Endereço da string hexadecimal
+    li     a7, 4                    # Syscall: print string
+    ecall
+
+# Pular linha no final do programa
+    la     a0, newline              # Endereço da string \n
+    li     a7, 4                    # Syscall: print string
+    ecall
+
+# Finalizar o programa
+    li     a7, 10                   # Syscall: exit
+    ecall
