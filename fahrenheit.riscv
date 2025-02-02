@@ -1,0 +1,52 @@
+    .data
+msg_input:   .asciz "Digite os dois ultimos digitos da sua matricula:\n"
+celsius:     .word 0        # Armazena o valor inteiro lido
+fahrenheit:  .float 0.0     # Armazena o resultado da conversão para Fahrenheit
+
+    .text
+    .globl main
+
+main:
+    # Exibir mensagem de entrada
+    la a0, msg_input        # Endereço da mensagem
+    li a7, 4                # Syscall: print string
+    ecall
+
+    # Ler o número inteiro (Celsius)
+    li a7, 5                # Syscall: read integer
+    ecall
+    li t0, 100
+    rem a0, a0, t0
+    la t0, celsius          # Carregar endereço de celsius
+    sw a0, 0(t0)            # Armazena o valor lido em memória
+
+    # Carregar C como inteiro e converter para float
+    lw a0, 0(t0)            # Carregar o valor de Celsius (inteiro)
+    fcvt.s.w fa0, a0        # Converter inteiro para ponto flutuante
+
+    # Multiplicar C * 9.0
+    li a1, 9
+    fcvt.s.w fa1, a1        # Converter 9 para float
+    fmul.s fa0, fa0, fa1    # fa0 = fa0 * 9.0
+
+    # Dividir por 5.0
+    li a1, 5
+    fcvt.s.w fa1, a1        # Converter 5 para float
+    fdiv.s fa0, fa0, fa1    # fa0 = fa0 / 5.0
+
+    # Adicionar 32.0
+    li a1, 32
+    fcvt.s.w fa1, a1        # Converter 32 para float
+    fadd.s fa0, fa0, fa1    # fa0 = fa0 + 32.0
+
+    # Armazena o resultado da conversão
+    la t0, fahrenheit       # Carregar endereço de fahrenheit
+    fsw fa0, 0(t0)          # Armazena F em memória
+
+    # Exibir mensagem de saída
+    li a7, 2                # Syscall: print float
+    ecall
+
+    # Finalizar o programa
+    li a7, 10               # Syscall: exit
+    ecall
